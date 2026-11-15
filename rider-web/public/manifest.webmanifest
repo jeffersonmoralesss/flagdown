@@ -1,0 +1,12 @@
+{
+  "name": "Flagdown",
+  "short_name": "Flagdown",
+  "description": "See licensed DC cabs near you and call the driver directly.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#C8102E",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

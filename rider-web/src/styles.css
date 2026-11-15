@@ -1,0 +1,662 @@
+/* Flagdown rider app styles.
+   The look comes from DC's own cabs: red body, gray stripe. Red is saved for the brand and for the
+   one action that matters (calling a driver), so the eye always finds it.
+   Type is Overpass, a typeface modeled on US highway signs: made to be read fast, at a glance. */
+
+:root {
+  --red: #c8102e;
+  --red-dark: #a10d25;
+  --stripe: #b4bac2;
+  --ink: #16202b;
+  --muted: #55606e;
+  --line: #dde1e6;
+  --surface: #f4f5f7;
+  --white: #ffffff;
+  --green: #0b7a43;
+  --panel-width: 26rem;
+  --focus: 0 0 0 3px var(--white), 0 0 0 6px #1b5fd9;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Sizes below use rem, so they grow if the rider has set larger text on their phone. */
+  font-size: 106.25%; /* 17px at default settings */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Overpass', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--white);
+}
+
+h1,
+h2,
+p,
+ol,
+ul,
+dl,
+dd {
+  margin: 0;
+  padding: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* ---------- Page frame ---------- */
+
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem;
+  background: var(--white);
+  /* The cab livery: a red band over a thinner gray stripe. */
+  border-bottom: 3px solid var(--stripe);
+  box-shadow: inset 0 -4px 0 var(--red);
+  padding-bottom: calc(0.55rem + 4px);
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+}
+
+.demo-pill {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 99px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.lang-button {
+  margin-left: auto;
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
+  font-weight: 600;
+  background: var(--white);
+  border: 1.5px solid var(--ink);
+  border-radius: 99px;
+  cursor: pointer;
+}
+
+.lang-button:hover {
+  background: var(--surface);
+}
+
+/* ---------- Buttons ---------- */
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 3.4rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.button-primary {
+  color: var(--white);
+  background: var(--red);
+}
+
+.button-primary:hover:not(:disabled) {
+  background: var(--red-dark);
+}
+
+.button-quiet {
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--white);
+  border-color: var(--line);
+}
+
+.button-quiet:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.link-button {
+  min-height: 2.75rem;
+  padding: 0;
+  font-weight: 600;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---------- Welcome ---------- */
+
+.welcome {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 1.25rem 2.5rem;
+}
+
+.welcome-inner {
+  max-width: 30rem;
+  margin: 0 auto;
+}
+
+.welcome-title {
+  font-size: clamp(2rem, 8vw, 2.9rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* Three real steps, in order, so they are numbered. */
+.steps {
+  list-style: none;
+  counter-reset: step;
+  margin-top: 1.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 2.4rem 1fr;
+  align-items: baseline;
+  padding: 0.9rem 0;
+  font-size: 1.05rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.steps li::before {
+  content: counter(step);
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--red);
+}
+
+.welcome-actions {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1.75rem;
+}
+
+.welcome-note {
+  margin-top: 1.1rem;
+  color: var(--muted);
+}
+
+/* ---------- Find a cab: map + list ---------- */
+
+.find {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: grid;
+  grid-template-rows: 36dvh minmax(0, 1fr);
+}
+
+/* The list comes first in the HTML (so screen readers reach it first) but the map sits on top. */
+.map {
+  grid-row: 1;
+  min-height: 0;
+  background: #e6e9ed;
+}
+
+.map-fallback {
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.panel {
+  grid-row: 2;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem 1rem 2rem;
+  border-top: 1px solid var(--line);
+}
+
+.notice {
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.9rem 0.1rem;
+  font-size: 0.95rem;
+  background: var(--surface);
+  border-left: 4px solid var(--stripe);
+  border-radius: 4px;
+}
+
+.list-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.list-sub {
+  margin-top: 0.2rem;
+  color: var(--muted);
+}
+
+.state {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.5rem 0;
+  font-size: 1.05rem;
+}
+
+.fine-print {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* ---------- Filters ---------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0.4rem;
+}
+
+.chip {
+  min-height: 2.75rem;
+  padding: 0 0.95rem;
+  font-weight: 600;
+  background: var(--white);
+  border: 1.5px solid var(--line);
+  border-radius: 99px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--ink);
+}
+
+/* An "on" filter is filled and gets a check mark, so it doesn't rely on color alone. */
+.chip[aria-pressed='true'] {
+  color: var(--white);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.chip[aria-pressed='true']::before {
+  content: '✓';
+  margin-right: 0.4rem;
+}
+
+/* ---------- Cab list ---------- */
+
+.cab-list {
+  list-style: none;
+}
+
+.cab-list li {
+  border-bottom: 1px solid var(--line);
+}
+
+.cab-row {
+  display: grid;
+  grid-template-columns: 3.6rem 1fr auto;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 0.9rem 0.4rem 0.9rem 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.cab-row:hover,
+.cab-row.selected {
+  background: var(--surface);
+}
+
+/* Minutes away is the first thing a rider wants, so it is the biggest thing in the row. */
+.eta {
+  display: grid;
+  justify-items: center;
+  line-height: 1;
+}
+
+.eta-number {
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.eta-unit {
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.cab-body {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.cab-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.cab-company,
+.cab-car {
+  color: var(--muted);
+}
+
+/* Drawn like a license plate, because that is what the rider will match it against on the street. */
+.plate {
+  display: inline-block;
+  padding: 0.05rem 0.4rem 0;
+  font-size: 0.9em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--white);
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin-top: 0.3rem;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.tag svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.cab-arrow {
+  display: grid;
+  color: var(--muted);
+}
+
+/* ---------- Map pins ---------- */
+
+.cab-pin {
+  padding: 0.3rem 0.55rem 0.2rem;
+  font: 800 0.95rem/1 'Overpass', system-ui, sans-serif;
+  white-space: nowrap;
+  color: var(--white);
+  background: var(--red);
+  border: 2px solid var(--white);
+  border-radius: 99px;
+  box-shadow: 0 1px 4px rgb(22 32 43 / 0.35);
+  cursor: pointer;
+}
+
+/* The small tip under the pill that points at the cab's exact spot. */
+.cab-pin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  border-right: 2px solid var(--white);
+  border-bottom: 2px solid var(--white);
+  transform: translateX(-50%) rotate(45deg);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.cab-pin.selected {
+  background: var(--ink);
+}
+
+.you-dot {
+  width: 18px;
+  height: 18px;
+  background: #1b5fd9;
+  border: 3px solid var(--white);
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px rgb(27 95 217 / 0.2);
+}
+
+/* ---------- Cab details ---------- */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgb(22 32 43 / 0.45);
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 11;
+  max-height: 90dvh;
+  overflow-y: auto;
+  padding: 0.6rem 1rem 1.5rem;
+  background: var(--white);
+  border-radius: 18px 18px 0 0;
+  animation: sheet-up 0.22s ease-out;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+.sheet-top {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sheet-back {
+  display: none;
+}
+
+.sheet-close {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  background: var(--surface);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.sheet-eta {
+  font-weight: 600;
+  color: var(--green);
+}
+
+.sheet-title {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.sheet-title:focus-visible {
+  box-shadow: none; /* focus lands here only so screen readers start at the top of the sheet */
+}
+
+.sheet-company {
+  color: var(--muted);
+}
+
+.button-call {
+  margin-top: 1rem;
+  min-height: 3.8rem;
+  font-size: 1.25rem;
+}
+
+.call-number {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.call-hint {
+  margin-top: 0.15rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.facts {
+  margin: 1.2rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.fact {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.fact dt {
+  color: var(--muted);
+}
+
+.fact dd {
+  font-weight: 600;
+  text-align: right;
+}
+
+.share-note {
+  min-height: 1.5rem;
+  margin-top: 0.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ---------- Wide screens: list on the left, map on the right ---------- */
+
+@media (min-width: 900px) {
+  .find {
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-columns: var(--panel-width) minmax(0, 1fr);
+  }
+
+  .panel {
+    grid-row: 1;
+    grid-column: 1;
+    padding: 1.5rem 1.5rem 2rem;
+    border-top: 0;
+    border-right: 1px solid var(--line);
+  }
+
+  .map {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .welcome {
+    padding-top: 4rem;
+  }
+
+  /* Details cover the list instead of sliding over the map. */
+  .sheet-backdrop {
+    display: none;
+  }
+
+  .sheet {
+    position: absolute;
+    top: 0;
+    right: auto;
+    width: var(--panel-width);
+    max-height: none;
+    padding: 0.75rem 1.5rem 2rem;
+    border-radius: 0;
+    border-right: 1px solid var(--line);
+    animation: none;
+  }
+
+  .sheet-top {
+    justify-content: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .sheet-close {
+    display: none;
+  }
+
+  .sheet-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 2.75rem;
+    padding: 0;
+    font-weight: 600;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+}
+
+/* Riders who turn on "reduce motion" get no slide animation. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}
