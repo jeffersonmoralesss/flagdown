@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Flagdown Driver",
+    "slug": "flagdown-driver",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.flagdown.driver"
+    },
+    "android": {
+      "package": "app.flagdown.driver"
+    },
+    "web": {
+      "name": "Flagdown Driver",
+      "shortName": "Flagdown Driver",
+      "themeColor": "#C8102E",
+      "backgroundColor": "#FFFFFF"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Flagdown shows riders near you where your cab is while you are Available.",
+          "locationAlwaysAndWhenInUsePermission": "Flagdown keeps showing riders where your cab is while you are Available, even when you switch to another app like Google Maps.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": true
+        }
+      ],
+      "expo-sqlite",
+      "expo-font",
+      "expo-localization"
+    ]
+  }
+}

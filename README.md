@@ -11,7 +11,7 @@ Riders pay nothing and need no account. Drivers pay a flat monthly subscription 
 | Folder | What it is | Status |
 | --- | --- | --- |
 | `rider-web/` | Rider web app: welcome, live map, cab list, filters, cab details, call, share | Done (demo or real data) |
-| `driver-app/` | Driver app (Expo, iPhone + Android): sign-up, documents, Available switch, background location | Next |
+| `driver-app/` | Driver app (one codebase for web, iPhone and Android): sign-up, documents, Available switch, location | Done (web tested; phone needs a build) |
 | `supabase/` | Database, security rules, tests | Done |
 | `admin/` | Approve drivers, handle reports | Later |
 
@@ -114,6 +114,128 @@ highway signs and made to be read at a glance. Minutes away is the largest thing
 it is the first thing a rider wants to know. Plates are drawn like plates because the rider will
 match them against a real one on the street.
 
+## Run the driver app
+
+The driver app is built with Expo, so the same code runs in a web browser (for demos), on your phone
+in Expo Go (for quick testing), and as a real iPhone and Android app later.
+
+It has no demo mode: its whole job is writing to the real database, so set up the database first
+(see "Set up the database" below).
+
+```bash
+cd driver-app
+npm install
+cp .env.example .env     # then paste the same URL and publishable key as rider-web/.env
+npx expo start --web     # opens the driver app at http://localhost:8081
+npm test                 # expect: pass 26, fail 0
+```
+
+### Try the whole thing end to end
+
+1. **Turn off email confirmation while testing.** In Supabase, go to **Authentication → Sign In / Providers
+   → Email** and switch off **Confirm email**. (Turn it back on before launch.) Otherwise each test
+   account has to click a confirmation link first.
+2. Open the driver app, **create an account**, fill in your details, and upload any three PDFs or
+   photos as the documents.
+3. **Approve yourself** in the Supabase SQL Editor (the admin panel will do this later). Use the same
+   full legal name you typed:
+   ```sql
+   update drivers
+     set status = 'approved', subscription_status = 'trialing', subscription_ends_at = now() + interval '30 days'
+     where legal_name = 'Your Full Name';
+   update driver_documents set verified = true
+     where driver_id = (select id from drivers where legal_name = 'Your Full Name');
+   ```
+4. In the driver app, tap **Check my status**, then **Go Available** and allow location.
+5. In another window, open the rider app (`cd rider-web && npm run dev`) and tap **Find cabs near me**.
+   Your cab is in the list and on the map. Tap **Go offline** in the driver app and it disappears
+   within a few seconds.
+
+That two-window demo is the one to show Robert.
+
+### On your phone
+
+- **Quick test with Expo Go:** install **Expo Go** from the App Store, run `npx expo start` (without
+  `--web`), and scan the QR code with your iPhone camera. Everything works except sending location
+  while the app is closed: Expo Go can't do that.
+- **Location in the background** needs a real build of the app (`npx expo run:ios` with Xcode, or
+  EAS Build), and on an iPhone that needs an Apple Developer account ($99 a year).
+
+## How the driver app works
+
+### The screens
+
+The app picks the screen from who's signed in and their status (`App.js`). No navigation library:
+a handful of screens chosen by data are easier to follow, and the back button can never land on a
+screen that no longer makes sense.
+
+| Situation | Screen | What it does |
+| --- | --- | --- |
+| Not signed in | `AuthScreen` | Sign in or create an account |
+| No details yet, or editing | `ProfileForm` | Who you are and your cab. Locked after approval except phone and payments |
+| Pending | `SetupScreen` | A 3-step checklist and the document uploads |
+| Approved | `HomeScreen` | The Available switch, what riders see, subscription, details, documents |
+| Suspended | `SuspendedScreen` | Explains the account is paused |
+
+### The files
+
+| File | What it does |
+| --- | --- |
+| `index.js` | Starts the app. Sets up storage and the background location task first (see the comments) |
+| `App.js` | Loads the fonts, then chooses the screen |
+| `src/lib/supabase.js` | The connection to Supabase, keeping you signed in |
+| `src/lib/api.js` | Every database and file call the app makes, in one place |
+| `src/lib/validate.js` | Form checks, with the same limits as the database |
+| `src/lib/documents.js` | Works out "missing / waiting for review / verified / expires soon / expired" |
+| `src/lib/subscription.js` | Whether the subscription lets you go Available, and what to say about it |
+| `src/location/tracking.js` | Starts and stops location sharing (background, foreground or web) |
+| `src/location/throttle.js` | Decides which GPS readings are worth sending |
+| `src/location/report.js` | Sends one position, remembering what was last sent |
+| `src/location/task.native.js` | The background task the phone wakes up to deliver locations |
+| `src/i18n/strings.js` | Every word on screen, in English and Spanish |
+| `src/components/` | Shared pieces: buttons, fields, the documents section, the rider preview |
+| `src/screens/` | The five screens above |
+
+Files ending in `.native.js` are used on iPhone and Android; the file with the same name without
+`.native` is used on the web. Expo picks the right one automatically. That's how one codebase handles
+things browsers can't do (background tasks) or already do (storage).
+
+### Why it's built this way
+
+**One codebase for web and phone.** Robert can see the driver side in a browser today, and the same
+code becomes the App Store and Play Store app. Only location sharing behaves differently per platform,
+and that's isolated in `src/location/`.
+
+**Location: three modes.** On a phone build with "Always" permission, location keeps sending while
+the driver uses Google Maps or locks the screen (`background`). With "While using" permission, or in
+Expo Go, it sends only while the app is open (`foreground`), and the app says so. In a browser it sends
+while the page is open (`web`), and the app asks the browser to keep the screen on.
+
+**What gets sent, and how often** (`throttle.js`). Riders' maps refresh every 5 seconds, and the
+database hides a cab whose position is over 3 minutes old. So the app sends the first position at once,
+then whenever the cab has moved 25 m (at most every 5 seconds), and at least every 30 seconds while
+parked. Readings worse than 100 m are skipped unless nothing better arrives for a minute. TowConnect
+sent once a minute, because tow trucks wait parked; cabs move.
+
+**Available only after location works.** Going Available first gets a position, then tells the
+database. Going offline stops sending first, then tells the database. So a cab is never listed without
+a position, and no position is sent after going offline.
+
+**Uploading never hides a driver.** Each upload is a new record. A driver renewing their insurance
+stays visible on the old, still-valid record while the new one is reviewed.
+
+**Errors in the driver's language.** Checks return a message key (`err.tooLong`), not English text, so
+the same check shows English or Spanish.
+
+### What makes it accessible
+
+- Text is 16 to 32 px, and every button and choice is at least 46 px tall (most are 52 or 64).
+- Choices show a check mark when selected, so nothing depends on color alone.
+- Screen readers hear each field's label, each choice as selected or not, and the Available state
+  when it changes.
+- In a browser, a blue ring shows which control has keyboard focus (and only for keyboard users).
+- English and Spanish everywhere, following the phone's language the first time.
+
 ## Set up the database
 
 The demo works without this. Do it when you want real drivers (or the seeded demo drivers) coming
@@ -213,13 +335,13 @@ the migration sets that up.
 
 ## Next steps
 
-1. Driver app: adapt TowConnect's Expo operator app for cab drivers (sign-up, documents, the
-   Available switch, background location every few seconds).
+1. Admin panel: approve drivers, start free trials, handle reports (instead of SQL).
 2. Rider app: "Report a problem" (the database side is ready), real routing for arrival times.
-3. Admin panel: approve drivers, start free trials, handle reports.
+3. A real phone build of the driver app, to test background location on an iPhone.
 4. Driver billing with Stripe.
 
 ## Change log
 
 - 2026-11-15: First version of the rider web app, on demo data.
+- 2026-11-18: Driver app (`driver-app/`) with 26 tests, tested end to end in a browser against the real database rules.
 - 2026-11-18: Database (`supabase/`) with 33 tests. Rider app uses it when Supabase keys are set, and keeps the moving demo cabs when they aren't.
