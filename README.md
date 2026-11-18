@@ -243,7 +243,8 @@ from a real database.
 
 1. Create a free project at [supabase.com](https://supabase.com). Pick the US East region (closest to DC).
 2. Open **SQL Editor**, paste all of `supabase/migrations/20261118000000_init.sql`, and click **Run**.
-   It should end with "Success. No rows returned".
+   It should end with "Success. No rows returned". Then do the same, in a new query, with
+   `supabase/migrations/20261118010000_api_grants.sql`. Always run the migration files in name order.
 3. Optional, for testing: in a new query, paste `supabase/seed.sql` and **Run**. This adds the same
    eight made-up cabs as the demo, parked around downtown. Remove them before launch with
    `delete from public.drivers where is_demo;`
@@ -343,5 +344,6 @@ the migration sets that up.
 ## Change log
 
 - 2026-11-15: First version of the rider web app, on demo data.
+- 2026-11-18: Added `20261118010000_api_grants.sql`. Supabase projects created after May 30, 2026 no longer give apps automatic access to new tables, which caused "permission denied for table drivers". The tests now behave like a new project.
 - 2026-11-18: Driver app (`driver-app/`) with 26 tests, tested end to end in a browser against the real database rules.
 - 2026-11-18: Database (`supabase/`) with 33 tests. Rider app uses it when Supabase keys are set, and keeps the moving demo cabs when they aren't.

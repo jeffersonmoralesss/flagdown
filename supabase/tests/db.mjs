@@ -24,11 +24,15 @@ export async function makeDb({ seed = true } = {}) {
     grant usage on schema public, auth, storage to anon, authenticated, service_role;
     grant execute on all functions in schema auth to anon, authenticated;
   `)
-  // Supabase grants these on every new table by default; row level security does the real protecting.
-  // (The migration then takes everything away from anon.)
-  await db.exec(`alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
-                 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
-                 alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;`)
+  // Like a Supabase project created after May 30, 2026: new tables get NO automatic access for the app's
+  // roles, so the migrations must grant everything the apps need themselves. (Older projects also gave
+  // automatic access; the migrations work on both, because they grant and revoke explicitly.)
+  // Set OLD_SUPABASE_DEFAULTS=1 to test the older behavior instead.
+  if (process.env.OLD_SUPABASE_DEFAULTS) {
+    await db.exec(`alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+                   alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+                   alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;`)
+  }
   const dir = new URL('migrations/', root)
   for (const file of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) {
     await db.exec(readFileSync(new URL(file, dir), 'utf8'))
